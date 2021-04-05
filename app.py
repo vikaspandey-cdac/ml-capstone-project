@@ -4,8 +4,8 @@ from flask import Flask, render_template, request
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics.pairwise import pairwise_distances
-from flask import Response
 
+import traceback
 import pickle
 import os
 
@@ -57,7 +57,7 @@ def create_similarity(user_id):
 
 
 def get_suggestions():
-    return list(product_user_rating['userId'].str.capitalize())
+    return list(user_final_rating.index)
 
 
 app = Flask(__name__)
@@ -72,16 +72,19 @@ def home():
 
 @app.route("/recommend", methods=['GET'])
 def recommend():
-    userid = request.args.get('userid')
-    df = create_similarity(userid)
-    csv_reader = df.to_dict("records")
-    results =[]
-    for row in csv_reader:
-        results.append(dict(row))
+    try:
+        userid = request.args.get('userid')
+        df = create_similarity(userid)
+        csv_reader = df.to_dict("records")
+        results = []
+        for row in csv_reader:
+            results.append(dict(row))
 
-    fieldnames = [key for key in results[0].keys()]
+        fieldnames = [key for key in results[0].keys()]
 
-    return render_template('recommend.html', results=results, fieldnames=fieldnames, len=len)
+        return render_template('recommend.html', results=results, fieldnames=fieldnames, len=len)
+    except Exception:
+        traceback.print_exc()
 
 
 if __name__ == '__main__':

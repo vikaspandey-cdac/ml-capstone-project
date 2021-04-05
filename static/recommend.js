@@ -27,7 +27,7 @@ $(function() {
 function load_details(title){
   $.ajax({
     type: 'GET',
-    url:'/recommend?userid='+title,
+    url:'/recommend?userid='+encodeURIComponent(title),
     dataType: 'html',
     complete: function(){
       $("#loader").delay(500).fadeOut();
