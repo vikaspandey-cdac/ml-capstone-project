@@ -9,37 +9,31 @@ import traceback
 import pickle
 import os
 
+import gc
+import os
+import tracemalloc
+
+import psutil
+
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 # load the nlp model and tfidf vectorizer from disk
-filename = 'model/nlp_XGboost_model.pkl'
-model = pickle.load(open(filename, 'rb'))
-vectorizer = pickle.load(open('model/tranform.pkl', 'rb'))
+MODEL_FILE_NAME = 'model/nlp_XGboost_model.pkl'
+TRANSFORM_FILE_NAME = 'model/tranform.pkl'
 
-product_user_rating = pd.read_csv('data/Product_User_Rating.csv')
+
+# product_user_rating = pd.read_csv('data/Product_User_Rating.csv')
 product_mapping = pd.read_csv('data/Product_Details_Reviews.csv')
-
-train, test = train_test_split(product_user_rating, test_size=0.30, random_state=42)
-df_pivot = train.pivot_table(index='userId', columns='prod_ID', values='rating').fillna(0)
-
-# Copy the train dataset into dummy_train
-dummy_train = train.copy()
-
-# The movies not rated by user is marked as 1 for prediction.
-dummy_train['rating'] = dummy_train['rating'].apply(lambda x: 0 if x >= 1 else 1)
-
-# Convert the dummy train dataset into matrix format.
-dummy_train = dummy_train.pivot_table(index='userId', columns='prod_ID', values='rating').fillna(1)
-
-# Creating the User Similarity Matrix using pairwise_distance function.
-user_correlation = 1 - pairwise_distances(df_pivot, metric='cosine')
-user_correlation[np.isnan(user_correlation)] = 0
-user_correlation[user_correlation < 0] = 0
-user_predicted_ratings = np.dot(user_correlation, df_pivot.fillna(0))
-user_final_rating = np.multiply(user_predicted_ratings, dummy_train)
+user_final_rating = pd.read_csv('data/user_final_rating.csv', index_col=0)
+user_final_rating.columns.name = user_final_rating.index.name
+user_final_rating.index.name = user_final_rating.index[0]
+# remove first row of data
+user_final_rating = user_final_rating.iloc[1:]
 
 
 def assignSentiments(reviews):
+    model = pickle.load(open(MODEL_FILE_NAME, 'rb'))
+    vectorizer = pickle.load(open(TRANSFORM_FILE_NAME, 'rb'))
     review_list = np.array([reviews])
     product_vector = vectorizer.transform(review_list)
     sentiments = model.predict(product_vector)
@@ -61,6 +55,10 @@ def get_suggestions():
 
 
 app = Flask(__name__)
+global_var = []
+process = psutil.Process(os.getpid())
+tracemalloc.start()
+s = None
 
 
 @app.route("/")
@@ -68,6 +66,13 @@ app = Flask(__name__)
 def home():
     suggestions = get_suggestions()
     return render_template('home.html', suggestions=suggestions)
+
+
+@app.route('/gc')
+def get_foo():
+    before = process.memory_info().rss;
+    gc.collect()  # does not help
+    return {'memory': process.memory_info().rss - before}
 
 
 @app.route("/recommend", methods=['GET'])
@@ -85,6 +90,27 @@ def recommend():
         return render_template('recommend.html', results=results, fieldnames=fieldnames, len=len)
     except Exception:
         traceback.print_exc()
+    finally:
+        gc.collect()
+
+
+@app.route('/memory')
+def print_memory():
+    return {'memory': process.memory_info().rss}
+
+
+@app.route("/snapshot")
+def snap():
+    global s
+    if not s:
+        s = tracemalloc.take_snapshot()
+        return "taken snapshot\n"
+    else:
+        lines = []
+        top_stats = tracemalloc.take_snapshot().compare_to(s, 'lineno')
+        for stat in top_stats[:5]:
+            lines.append(str(stat))
+        return "\n".join(lines)
 
 
 if __name__ == '__main__':
