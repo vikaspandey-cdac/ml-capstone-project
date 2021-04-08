@@ -29,10 +29,7 @@
   <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='style.css') }}">
 
   <script type="text/javascript">
-    var films = {{suggestions|tojson}};
-    $(document).ready(function(){
-      $("#myModal").modal('show');
-    });
+    var user_list = {{suggestions|tojson}};
   </script>
 
 </head>
@@ -72,30 +69,11 @@
     Please check the spelling or try out other username!</h3></center>
   </div>
 
-	<div class="results">
+	<div class="results" style="overflow-y: scroll;">>
     <center>
       <h2 id="name" class="text-uppercase"></h2>
     </center>
 	</div>
-	
-	<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel3" aria-hidden="true">
-    <div class="modal-dialog modal-md" role="document">
-      <div class="modal-content">
-        <div class="modal-header" style="background-color: #223;color: #ccc;">
-          <h5 class="modal-title" id="exampleModalLabel3">Hello 🤗</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true" style="color: #ccc">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <p>Just enter the user name which you're looking. Don't worry about the typo error.</p>
-        </div>
-        <div class="modal-footer" style="text-align: center;">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Let's go!</button>
-        </div>
-      </div>
-    </div>
-  </div>
 	
 	<footer class="footer">
     <br/> 

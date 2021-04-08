@@ -18,7 +18,8 @@ $(function() {
       $('.fail').css('display','block');
     }
     else{
-      load_details(title);
+        $("#loader").fadeIn();
+        load_details(title);
     }
   });
 });
@@ -39,8 +40,6 @@ function load_details(title){
         $("#loader").delay(500).fadeOut();
       }
       else{
-        $("#loader").fadeIn();
-        $('.fail').css('display','none');
         $('.results').delay(1000).css('display','block');
         $('.results').html(results);
         $('#autoComplete').val('');
